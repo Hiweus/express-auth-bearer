@@ -39,7 +39,7 @@ export class Auth {
       user,
       type: 'access_token',
     }
-    const token = jwt.sign(payload, this.privateKey, { algorithm: 'RS256' })
+    const token = jwt.sign(payload, this.privateKey, { algorithm: 'RS256', expiresIn: '1h' })
     return token
   }
 
