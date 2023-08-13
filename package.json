@@ -1,6 +1,6 @@
 {
   "name": "@hiweus/express-auth-bearer",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Auth library for express to issues and verify bearer tokens and helpers to handle authorization",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
