@@ -1,0 +1,23 @@
+{
+  "name": "@hiweus/express-auth-bearer",
+  "version": "1.0.2",
+  "description": "Auth library for express to issues and verify bearer tokens and helpers to handle authorization",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.2",
+    "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.1"
+  }
+}
