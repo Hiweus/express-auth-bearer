@@ -2,8 +2,15 @@ import jwt from 'jsonwebtoken'
 
 export interface IAuthStrategy {
   login: (credentials: Record<string, string>) => Promise<Record<string, unknown> | null>
-  getUser: (payload: Record<string, unknown>) => Promise<Record<string, unknown> | null>
-  can: (actions: string[], payload: Record<string, unknown>) => Promise<boolean>
+  getUser: (id: string) => Promise<Record<string, unknown> | null>
+  can: (actions: string[], userInfo: Record<string, unknown>) => Promise<boolean>
+}
+
+export type TokenBasePayload = {
+  type: string
+  user: {
+    id: string
+  }
 }
 
 export interface IAuthConstructor {
@@ -36,8 +43,8 @@ export class Auth {
 
   async generateAccessToken(user: Record<string, unknown>) {
     const payload = {
-      user,
       type: 'access_token',
+      user,
     }
     const token = jwt.sign(payload, this.privateKey, { algorithm: 'RS256', expiresIn: '1h' })
     return token
@@ -45,8 +52,10 @@ export class Auth {
 
   async generateRefreshToken(user: Record<string, unknown>) {
     const payload = {
-      id: user.id,
       type: 'refresh_token',
+      user: {
+        id: user.id,
+      }
     }
     const token = jwt.sign(payload, this.privateKey, { algorithm: 'RS256', expiresIn: '30d' })
     return token
@@ -69,11 +78,11 @@ export class Auth {
     return async (request: IRequest, response: IResponse) => {
       try {
         const refreshToken = request.headers.authorization.replace('Bearer ', '')
-        const payload = jwt.verify(refreshToken, this.publicKey, { algorithms: ['RS256'] }) as Record<string, unknown>
-        if (payload.type !== 'refresh_token') {
+        const { type, user: { id } } = jwt.verify(refreshToken, this.publicKey, { algorithms: ['RS256'] }) as TokenBasePayload
+        if (type !== 'refresh_token') {
           return response.status(401).json({ message: 'Cannot use this token as refresh token' })
         }
-        const user = await this.strategy.getUser(payload)
+        const user = await this.strategy.getUser(id)
         if(!user) {
           return response.status(403).json({ message: 'Cannot refresh this token' })
         }
@@ -89,16 +98,18 @@ export class Auth {
     return async (request: IRequest, response: IResponse, next: () => void) => {
       try {
         const accessToken = request.headers.authorization.replace('Bearer ', '')
-        const payload = jwt.verify(accessToken, this.publicKey, { algorithms: ['RS256'] }) as Record<string, unknown>
-        if (payload.type !== 'access_token') {
+        const { type, user: { id } } = jwt.verify(accessToken, this.publicKey, { algorithms: ['RS256'] }) as TokenBasePayload
+        if (type !== 'access_token') {
           return response.status(401).json({ message: 'Cannot use this token as access token' })
         }
 
-        if(!await this.strategy.can(actions, payload)) {
+        const user = await this.strategy.getUser(id)
+
+        if(!await this.strategy.can(actions, user)) {
           return response.status(403).json({ message: 'Cannot access required resource' })
         }
 
-        request.user = await this.strategy.getUser(payload)
+        request.user = user
         next()
       } catch (error) {
         console.log(error)
