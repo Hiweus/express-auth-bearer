@@ -6,13 +6,12 @@ Expose functions to handle access/refresh token and authorization
 
 ```js
 import 'dotenv/config.js'
-import express from "express"
 
+import express from "express"
 import { Auth } from '@hiweus/express-auth-bearer'
 
 const app = express()
 app.use(express.json())
-
 
 const strategy = {
   async login({ email, password }) {
@@ -21,7 +20,13 @@ const strategy = {
     }
     return {
       id: 1,
-      email: email,
+    }
+  },
+
+  async getUser(id) {
+    return {
+      id: +id,
+      email: 'admin@admin.com',
       permissions: [
         'read:users',
         'read:posts',
@@ -29,17 +34,9 @@ const strategy = {
     }
   },
 
-  async getUser(payload) {
-    return {
-      id: payload?.user?.id ?? payload?.id,
-      email: '',
-    }
+  async can(actions, user) {
+    return actions.every(action => user.permissions.includes(action))
   },
-
-  async can(actions, payload) {
-    return actions.every(action => payload?.user?.permissions?.includes(action))
-  },
-
 }
 
 const auth = new Auth({
